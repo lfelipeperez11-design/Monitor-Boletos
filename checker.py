@@ -1,10 +1,11 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 import requests
-from bs4 import BeautifulSoup
 import os
+import time
 
-URL = "https://www.ticketmaster.es/event/TU-URL-AQUI"
-SELECTOR = "button.buy-tickets"      # cámbialo según la web
-TEXTO_BOTON = "Comprar entradas"     # opcional, deja "" para ignorar
+URL = "https://www.priceless.com/sports/product/224382/uefa-champions-league-ko-ticket-only-package-spain"
 
 def send_telegram(mensaje):
     token = os.environ["TELEGRAM_TOKEN"]
@@ -15,27 +16,30 @@ def send_telegram(mensaje):
     )
 
 def check():
-    headers = {"User-Agent": "Mozilla/5.0"}
-    resp = requests.get(URL, headers=headers, timeout=15)
-    soup = BeautifulSoup(resp.text, "html.parser")
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
 
-    botones = soup.select(SELECTOR)
-    if TEXTO_BOTON:
-        botones = [b for b in botones if TEXTO_BOTON.lower() in b.get_text().lower()]
+    driver = webdriver.Chrome(options=options)
+    driver.get(URL)
+    time.sleep(5)
 
-    disponibles = [b for b in botones if not b.get("disabled")]
+    todos = driver.find_elements(By.CLASS_NAME, "buyButton")
+    disponibles = [b for b in todos if "disabledButton" not in b.get_attribute("class")]
 
-    if disponibles:
-        print("BOTÓN ENCONTRADO - enviando alerta")
-        send_telegram(f"Boletos disponibles: {URL}")
-    else:
-        print(f"Sin boletos. Botones encontrados: {len(botones)}")
+    print(f"Total botones: {len(todos)} | Disponibles: {len(disponibles)}")
+
+    if len(disponibles) > 0:
+        textos = [b.text.strip() for b in disponibles]
+        send_telegram(
+            f"BOLETO DISPONIBLE en priceless.com!\n"
+            f"Botones activos: {len(disponibles)}\n"
+            f"Opciones: {', '.join(textos)}\n"
+            f"{URL}"
+        )
+    
+    driver.quit()
 
 if __name__ == "__main__":
     check()
-```
-
-**`requirements.txt`**:
-```
-requests
-beautifulsoup4
