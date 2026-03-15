@@ -28,10 +28,3 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-```
-
-Y el `requirements.txt` actualizado:
-```
-requests
-selenium
-webdriver-manager
